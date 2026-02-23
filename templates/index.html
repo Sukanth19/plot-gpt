@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOVIE_RECOMMENDER.EXE</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'VT323', monospace;
+            background: #000;
+            color: #00ff00;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* CRT Effect */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 2px;
+            z-index: 2;
+            pointer-events: none;
+            animation: flicker 0.15s infinite;
+        }
+
+        /* Scanline */
+        body::after {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: rgba(18, 16, 16, 0.1);
+            opacity: 0;
+            z-index: 2;
+            pointer-events: none;
+            animation: scanline 8s linear infinite;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.97; }
+            50% { opacity: 0.99; }
+            100% { opacity: 0.97; }
+        }
+
+        @keyframes scanline {
+            0% { background-position: 0 -100vh; }
+            100% { background-position: 0 100vh; }
+        }
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00; }
+            50% { text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00; }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            border: 2px solid #00ff00;
+            padding: 20px;
+            background: rgba(0, 255, 0, 0.05);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            animation: slideIn 0.5s ease-out;
+        }
+
+        h1 {
+            font-size: 3em;
+            animation: glow 2s infinite;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.3em;
+            color: #00cc00;
+        }
+
+        .cursor {
+            animation: blink 1s infinite;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+
+        .terminal-box {
+            border: 2px solid #00ff00;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+            margin-bottom: 20px;
+            position: relative;
+            animation: slideIn 0.7s ease-out;
+        }
+
+        .terminal-box::before {
+            content: '█';
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            animation: blink 1s infinite;
+        }
+
+        .terminal-header {
+            color: #00ff00;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            border-bottom: 1px solid #00ff00;
+            padding-bottom: 10px;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .input-box {
+            width: 100%;
+            padding: 12px;
+            background: #000;
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            font-family: 'VT323', monospace;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .input-box:focus {
+            outline: none;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+            background: rgba(0, 255, 0, 0.05);
+        }
+
+        .btn {
+            padding: 12px 25px;
+            background: #000;
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            font-family: 'VT323', monospace;
+            font-size: 1.3em;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 255, 0, 0.2);
+            transition: left 0.3s;
+        }
+
+        .btn:hover::before {
+            left: 0;
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            width: 100%;
+            margin-bottom: 10px;
+            animation: glow 3s infinite;
+        }
+
+        .genre-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .genre-tag {
+            padding: 10px;
+            background: #000;
+            border: 1px solid #00ff00;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.2em;
+            position: relative;
+        }
+
+        .genre-tag:hover {
+            background: rgba(0, 255, 0, 0.1);
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+        }
+
+        .genre-tag.active {
+            background: rgba(0, 255, 0, 0.2);
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
+        }
+
+        .genre-tag.active::before {
+            content: '> ';
+        }
+
+        .genre-tag.active::after {
+            content: ' <';
+        }
+
+        .movie-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .movie-list::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .movie-list::-webkit-scrollbar-track {
+            background: #000;
+            border: 1px solid #00ff00;
+        }
+
+        .movie-list::-webkit-scrollbar-thumb {
+            background: #00ff00;
+        }
+
+        .movie-item {
+            padding: 15px;
+            border-bottom: 1px solid #00ff00;
+            cursor: pointer;
+            transition: all 0.3s;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .movie-item:hover {
+            background: rgba(0, 255, 0, 0.1);
+            padding-left: 25px;
+            border-left: 3px solid #00ff00;
+        }
+
+        .movie-title {
+            font-size: 1.4em;
+            margin-bottom: 5px;
+            color: #00ff00;
+        }
+
+        .movie-genres {
+            font-size: 1.1em;
+            color: #00cc00;
+            margin-bottom: 8px;
+        }
+
+        .movie-score {
+            display: inline-block;
+            padding: 5px 12px;
+            background: #00ff00;
+            color: #000;
+            font-weight: bold;
+            font-size: 1.1em;
+            border-radius: 3px;
+            animation: glow 2s infinite;
+        }
+
+        .watched-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(0, 255, 0, 0.05);
+            border: 1px solid #00ff00;
+            margin-bottom: 10px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .watched-item:hover {
+            background: rgba(0, 255, 0, 0.15);
+        }
+
+        .watched-title {
+            font-size: 1.3em;
+            flex: 1;
+        }
+
+        .btn-remove {
+            padding: 5px 15px;
+            background: #000;
+            border: 1px solid #ff0000;
+            color: #ff0000;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'VT323', monospace;
+            font-size: 1.2em;
+        }
+
+        .btn-remove:hover {
+            background: rgba(255, 0, 0, 0.2);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+        }
+
+        .search-results {
+            position: absolute;
+            background: #000;
+            border: 2px solid #00ff00;
+            max-height: 400px;
+            overflow-y: auto;
+            width: calc(100% - 40px);
+            z-index: 1000;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
+        }
+
+        .search-result-item {
+            padding: 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #00ff00;
+            transition: all 0.3s;
+        }
+
+        .search-result-item:hover {
+            background: rgba(0, 255, 0, 0.2);
+            padding-left: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-box {
+            background: rgba(0, 255, 0, 0.1);
+            border: 2px solid #00ff00;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            animation: glow 3s infinite;
+        }
+
+        .stat-value {
+            font-size: 3em;
+            font-weight: bold;
+            color: #00ff00;
+            text-shadow: 0 0 20px #00ff00;
+        }
+
+        .stat-label {
+            font-size: 1.3em;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+
+        .slider-container {
+            margin: 20px 0;
+        }
+
+        .slider-label {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .slider {
+            width: 100%;
+            height: 10px;
+            background: #000;
+            border: 2px solid #00ff00;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            background: #00ff00;
+            cursor: pointer;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            background: #00ff00;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #00cc00;
+            font-size: 1.5em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 2em;
+            animation: glow 1s infinite;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: blink 1s infinite;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .genre-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            }
+        }
+
+        /* Additional animations */
+        @keyframes typing {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        .typing-effect {
+            overflow: hidden;
+            white-space: nowrap;
+            animation: typing 2s steps(40);
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #000;
+            border: 2px solid #00ff00;
+            margin: 10px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #00ff00;
+            box-shadow: 0 0 20px #00ff00;
+            transition: width 0.5s;
+        }
+
+        /* Filter tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-tab {
+            padding: 10px 20px;
+            background: #000;
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: all 0.3s;
+        }
+
+        .filter-tab:hover {
+            background: rgba(0, 255, 0, 0.1);
+        }
+
+        .filter-tab.active {
+            background: rgba(0, 255, 0, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>MOVIE_RECOMMENDER.EXE</h1>
+            <p class="subtitle">&gt; INITIALIZING NEURAL NETWORK<span class="cursor">_</span></p>
+            <p class="subtitle">&gt; AI RECOMMENDATION ENGINE v2.0</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Left Panel -->
+            <div>
+                <!-- Watched Movies -->
+                <div class="terminal-box">
+                    <div class="terminal-header">&gt; WATCHED_MOVIES.DB</div>
+                    <div style="position: relative;">
+                        <input type="text" class="input-box" id="movieSearch" placeholder="[SEARCH DATABASE...]">
+                        <div id="searchResults"></div>
+                    </div>
+                    <div class="filter-tabs">
+                        <div class="filter-tab active" onclick="filterWatched('all')">ALL</div>
+                        <div class="filter-tab" onclick="filterWatched('recent')">RECENT</div>
+                        <div class="filter-tab" onclick="filterWatched('year')">BY YEAR</div>
+                    </div>
+                    <div id="watchedList"></div>
+                </div>
+
+                <!-- Genre Selection -->
+                <div class="terminal-box">
+                    <div class="terminal-header">&gt; GENRE_SELECTION.SYS</div>
+                    <div class="filter-tabs" style="margin-bottom: 15px;">
+                        <div class="filter-tab" onclick="selectAllGenres()">SELECT ALL</div>
+                        <div class="filter-tab" onclick="clearGenres()">CLEAR ALL</div>
+                    </div>
+                    <div id="genreList" class="genre-grid"></div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="terminal-box">
+                    <div class="terminal-header">&gt; SYSTEM_STATS.LOG</div>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-value" id="statWatched">0</div>
+                            <div class="stat-label">Watched</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="statGenres">0</div>
+                            <div class="stat-label">Genres</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="statTotal">0</div>
+                            <div class="stat-label">Total DB</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div>
+                <!-- Recommendations -->
+                <div class="terminal-box">
+                    <div class="terminal-header">&gt; AI_RECOMMENDATIONS.EXE</div>
+                    
+                    <div class="slider-container">
+                        <label class="slider-label">DIVERSITY FACTOR: <span id="diversityValue">0.3</span></label>
+                        <input type="range" min="0" max="1" step="0.1" value="0.3" class="slider" id="diversitySlider">
+                        <small style="display: block; color: #00cc00; margin-top: 10px;">
+                            [0.0 = SIMILAR] ←→ [1.0 = DIVERSE]
+                        </small>
+                    </div>
+
+                    <div class="slider-container">
+                        <label class="slider-label">MIN SCORE: <span id="minScoreValue">0.0</span></label>
+                        <input type="range" min="0" max="1" step="0.05" value="0" class="slider" id="minScoreSlider">
+                    </div>
+
+                    <div class="slider-container">
+                        <label class="slider-label">RESULTS: <span id="resultCountValue">15</span></label>
+                        <input type="range" min="5" max="50" step="5" value="15" class="slider" id="resultCountSlider">
+                    </div>
+
+                    <button class="btn btn-primary" onclick="getRecommendations()">
+                        &gt;&gt; EXECUTE_RECOMMENDATION_ALGORITHM &lt;&lt;
+                    </button>
+
+                    <div class="filter-tabs">
+                        <div class="filter-tab active" onclick="sortRecommendations('score')">BY SCORE</div>
+                        <div class="filter-tab" onclick="sortRecommendations('year')">BY YEAR</div>
+                        <div class="filter-tab" onclick="sortRecommendations('title')">BY TITLE</div>
+                    </div>
+
+                    <div id="recommendations"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let watchedMovies = [];
+        let selectedGenres = [];
+        let allGenres = [];
+        let allRecommendations = [];
+        let currentSort = 'score';
+        let searchTimeout;
+
+        // Load genres on page load
+        async function loadGenres() {
+            const response = await fetch('/api/genres');
+            const genres = await response.json();
+            allGenres = genres;
+            
+            const container = document.getElementById('genreList');
+            container.innerHTML = genres.map(genre => 
+                `<div class="genre-tag" onclick="toggleGenre('${genre}')">${genre}</div>`
+            ).join('');
+        }
+
+        async function loadStats() {
+            const response = await fetch('/api/stats');
+            const stats = await response.json();
+            document.getElementById('statTotal').textContent = stats.total_movies;
+        }
+
+        function toggleGenre(genre) {
+            const index = selectedGenres.indexOf(genre);
+            if (index > -1) {
+                selectedGenres.splice(index, 1);
+            } else {
+                selectedGenres.push(genre);
+            }
+            updateGenreUI();
+            updateStats();
+        }
+
+        function selectAllGenres() {
+            selectedGenres = [...allGenres];
+            updateGenreUI();
+            updateStats();
+        }
+
+        function clearGenres() {
+            selectedGenres = [];
+            updateGenreUI();
+            updateStats();
+        }
+
+        function updateGenreUI() {
+            document.querySelectorAll('.genre-tag').forEach(el => {
+                el.classList.toggle('active', selectedGenres.includes(el.textContent));
+            });
+        }
+
+        // Search movies
+        document.getElementById('movieSearch').addEventListener('input', async (e) => {
+            const query = e.target.value;
+            
+            clearTimeout(searchTimeout);
+            
+            if (query.length < 2) {
+                document.getElementById('searchResults').innerHTML = '';
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                const response = await fetch(`/api/movies/search?q=${encodeURIComponent(query)}&limit=30`);
+                const movies = await response.json();
+
+                const resultsHTML = movies.map(movie => `
+                    <div class="search-result-item" onclick="addWatchedMovie(${movie.movie_id})">
+                        <div style="font-weight: bold; font-size: 1.3em;">&gt; ${movie.title}</div>
+                        <div style="font-size: 1.1em; color: #00cc00; margin-top: 5px;">[${movie.genres.join(', ')}]</div>
+                    </div>
+                `).join('');
+
+                document.getElementById('searchResults').innerHTML = 
+                    movies.length > 0 ? `<div class="search-results">${resultsHTML}</div>` : '';
+            }, 300);
+        });
+
+        async function addWatchedMovie(movieId) {
+            if (watchedMovies.includes(movieId)) {
+                alert('> ERROR: MOVIE ALREADY IN DATABASE');
+                return;
+            }
+
+            watchedMovies.push(movieId);
+            document.getElementById('movieSearch').value = '';
+            document.getElementById('searchResults').innerHTML = '';
+            await renderWatchedList();
+            updateStats();
+        }
+
+        function removeWatchedMovie(movieId) {
+            watchedMovies = watchedMovies.filter(id => id !== movieId);
+            renderWatchedList();
+            updateStats();
+        }
+
+        function filterWatched(type) {
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            renderWatchedList();
+        }
+
+        async function renderWatchedList() {
+            const container = document.getElementById('watchedList');
+            
+            if (watchedMovies.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div style="font-size: 2em; margin-bottom: 20px;">[ EMPTY ]</div>
+                        <p>&gt; NO MOVIES IN DATABASE</p>
+                        <p>&gt; SEARCH AND ADD ABOVE</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const movieDetails = await Promise.all(
+                watchedMovies.map(id => fetch(`/api/movies/${id}`).then(r => r.json()))
+            );
+
+            container.innerHTML = `<div class="movie-list">${
+                movieDetails.map(movie => `
+                    <div class="watched-item">
+                        <div>
+                            <div class="watched-title">&gt; ${movie.title}</div>
+                            <div style="font-size: 1.1em; color: #00cc00;">[${movie.genres.join(', ')}]</div>
+                        </div>
+                        <button class="btn-remove" onclick="removeWatchedMovie(${movie.movie_id})">[X]</button>
+                    </div>
+                `).join('')
+            }</div>`;
+        }
+
+        async function getRecommendations() {
+            if (watchedMovies.length === 0) {
+                alert('> ERROR: NO WATCHED MOVIES IN DATABASE');
+                return;
+            }
+
+            const container = document.getElementById('recommendations');
+            container.innerHTML = '<div class="loading">&gt; PROCESSING NEURAL NETWORK</div>';
+
+            const diversity = parseFloat(document.getElementById('diversitySlider').value);
+            const minScore = parseFloat(document.getElementById('minScoreSlider').value);
+            const resultCount = parseInt(document.getElementById('resultCountSlider').value);
+            
+            const response = await fetch('/api/recommendations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    watched_ids: watchedMovies,
+                    preferred_genres: selectedGenres,
+                    diversity: diversity,
+                    n: resultCount
+                })
+            });
+
+            const recommendations = await response.json();
+            allRecommendations = recommendations.filter(r => r.score >= minScore);
+            sortRecommendations(currentSort);
+        }
+
+        function sortRecommendations(type) {
+            currentSort = type;
+            
+            document.querySelectorAll('.filter-tabs .filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event?.target?.classList.add('active');
+
+            let sorted = [...allRecommendations];
+            
+            if (type === 'score') {
+                sorted.sort((a, b) => b.score - a.score);
+            } else if (type === 'year') {
+                sorted.sort((a, b) => (b.movie.year || 0) - (a.movie.year || 0));
+            } else if (type === 'title') {
+                sorted.sort((a, b) => a.movie.title.localeCompare(b.movie.title));
+            }
+            
+            renderRecommendations(sorted);
+        }
+
+        function renderRecommendations(recommendations) {
+            const container = document.getElementById('recommendations');
+            
+            if (recommendations.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div style="font-size: 2em; margin-bottom: 20px;">[ NO RESULTS ]</div>
+                        <p>&gt; NO MATCHES FOUND</p>
+                        <p>&gt; TRY ADJUSTING PARAMETERS</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `<div class="movie-list">${
+                recommendations.map(({ movie, score }, index) => `
+                    <div class="movie-item" onclick="addWatchedMovie(${movie.movie_id})" style="animation-delay: ${index * 0.05}s">
+                        <div class="movie-title">&gt; ${movie.title}</div>
+                        <div class="movie-genres">[${movie.genres.join(', ')}]</div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <span class="movie-score">MATCH: ${(score * 100).toFixed(1)}%</span>
+                            ${movie.year ? `<span style="color: #00cc00;">[${movie.year}]</span>` : ''}
+                        </div>
+                    </div>
+                `).join('')
+            }</div>`;
+        }
+
+        function updateStats() {
+            document.getElementById('statWatched').textContent = watchedMovies.length;
+            document.getElementById('statGenres').textContent = selectedGenres.length;
+        }
+
+        // Sliders
+        document.getElementById('diversitySlider').addEventListener('input', (e) => {
+            document.getElementById('diversityValue').textContent = e.target.value;
+        });
+
+        document.getElementById('minScoreSlider').addEventListener('input', (e) => {
+            document.getElementById('minScoreValue').textContent = e.target.value;
+        });
+
+        document.getElementById('resultCountSlider').addEventListener('input', (e) => {
+            document.getElementById('resultCountValue').textContent = e.target.value;
+        });
+
+        // Initialize
+        loadGenres();
+        loadStats();
+        renderWatchedList();
+    </script>
+</body>
+</html>
+
