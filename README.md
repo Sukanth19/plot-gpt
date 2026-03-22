@@ -1,183 +1,220 @@
-# plot-gpt
-
-A Flask-based movie recommendation system with a retro CRT-style terminal UI. It starts as a strong content-based recommender (cosine similarity over genre vectors + TF‑IDF-like user profiling) and is designed to evolve into a hybrid system (content + collaborative filtering) using MovieLens ratings.
-
----
-
-## Features
-
-- Interactive web UI to:
-  - search movies and build a watched list
-  - optionally filter by genres
-  - tune diversity and result count
-- Content-based recommendations using:
-  - genre vectorization (movie → genre-space vector)
-  - TF‑IDF-like weighted user profiles (watch history → preference vector)
-  - cosine similarity computed efficiently with NumPy
-- Dataset analytics + debugging visualizations (Matplotlib/Seaborn):
-  - genre distribution
-  - movies per year
-  - genre co-occurrence heatmap
-  - personal genre profile chart
-
----
-
-## How it works (high level)
-
-This project uses a content-based approach (and prepares for hybridization later):
-
-1. Convert each movie's genres into a vector (one dimension per genre).
-2. Build a user preference profile from watched movies using weighted genre frequency.
-3. Rank all unseen movies by cosine similarity to the user profile.
-4. Optionally blend in release-year proximity and a diversity factor.
-
-This approach is fast, explainable, and works even when you don’t have ratings for the current user.
-
----
-
-## Recommendation algorithm (details)
-
-### 1) Genre vectors
-
-Each movie is represented as a binary vector in “genre space”. If there are `G` unique genres in the dataset, then every movie becomes a `G`-dimensional vector where:
-
-- `1` = movie has that genre
-- `0` = movie does not
-
-Example:
-
 ```
-Genres = [Action, Comedy, Drama, Thriller, ...]
-"Die Hard"  -> [1, 0, 0, 1, ...]
-"Toy Story" -> [0, 1, 0, 0, ...]
+ _____ _       _      ____ ____ _____ 
+|  __ \ |     | |    / ___|  _ \_   _|
+| |__) | | ___ | |_  | |  _| |_) || |  
+|  ___/| |/ _ \| __| | |_| |  __/ | |  
+| |    | | (_) | |_   \____|_|    | |  
+|_|    |_|\___/ \__|                   
 ```
 
-All movie vectors are stored in a matrix `M` (shape: `n_movies x n_genres`) and pre-normalized so that cosine similarity can be computed quickly using matrix multiplication.
+<div align="center">
+
+**A retro-styled movie recommendation engine with intelligent genre-based matching**
+
+`[ Content-Based Filtering ]` · `[ TF-IDF Profiling ]` · `[ CRT Aesthetics ]`
 
 ---
 
-### 2) User genre profile (TF‑IDF-like weighting)
+</div>
 
-A user profile is built from watched movies. Genres that appear frequently in your watched list get a higher weight (TF). Genres that are extremely common across the whole dataset are slightly down-weighted via an IDF-like penalty, so rare but meaningful preferences (e.g., Film-Noir) stand out more.
+## .:[ OVERVIEW ]:.
 
-Core idea:
+A Flask-based movie recommendation system featuring a nostalgic CRT terminal interface. Built on cosine similarity over genre vectors with TF-IDF user profiling, designed to evolve into a hybrid recommendation system combining content-based and collaborative filtering approaches.
 
-```python
-tf = count / total_watched
-idf = log(total_movies / (1 + movies_with_genre))
-weight = tf * (1 + idf * 0.1)
 ```
-
-The result is a weighted preference vector representing the “direction” of your taste in genre space.
+┌─────────────────────────────────────────────────────────────┐
+│  > Search movies                                            │
+│  > Build your watch history                                 │
+│  > Get personalized recommendations                         │
+│  > Visualize your genre preferences                         │
+│  > Tune diversity and year weighting                        │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-### 3) Cosine similarity
-
-Cosine similarity measures how aligned two vectors are:
+## .:[ FEATURES ]:.
 
 ```
-similarity = (A · B) / (||A|| * ||B||)
+┌──────────────────────────────────────────────────────────────────┐
+│                                                                  │
+│  [*] Interactive Web UI                                          │
+│      └─> Search, watch history, personalized recommendations     │
+│                                                                  │
+│  [*] Content-Based Recommendations                               │
+│      └─> Genre vectorization with cosine similarity              │
+│                                                                  │
+│  [*] TF-IDF Weighting                                            │
+│      └─> Intelligent user profile generation                     │
+│                                                                  │
+│  [*] Data Visualizations                                         │
+│      └─> Genre distribution, heatmaps, personal profiles         │
+│                                                                  │
+│  [*] Retro Aesthetic                                             │
+│      └─> CRT terminal styling with scanlines and glow            │
+│                                                                  │
+│  [*] Configurable Parameters                                     │
+│      └─> Diversity, year weighting, result count                 │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
 ```
-
-Interpretation:
-
-- `1.0` -> very similar genre direction
-- `0.0` -> unrelated genre direction
-
-Why cosine instead of Jaccard:
-
-- Jaccard is set-based: “do they overlap?”
-- Cosine is vector-based: “how strongly do they align with your preference distribution?”
-
-In practice, cosine is smoother and usually ranks better when your profile has different preference strengths across multiple genres.
 
 ---
 
-### 4) Final scoring (relevance + year + diversity)
+## .:[ QUICK START ]:.
 
-The final score combines:
+```bash
+# Clone the repository
+git clone https://github.com/Sukanth19/plot-gpt.git
+cd plot-gpt
 
-- `cosine_score`: primary relevance signal
-- `year_score`: mild preference for movies close to the average year of watched movies
-- `diversity_bonus`: reduces “echo chamber” recommendations when you want a wider spread
+# Download the dataset from Kaggle
+# https://www.kaggle.com/datasets/parasharmanas/movie-recommendation-system
+# Extract movies.csv and ratings.csv to the data/ directory
 
-One version of the scoring logic:
+# Activate virtual environment
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the application
+python run.py
+```
 
 ```
-final_score = (cosine_score * (1 - year_weight) + year_score * year_weight) * diversity_bonus
+┌─────────────────────────────────────┐
+│  Server running on:                 │
+│  http://localhost:5000              │
+└─────────────────────────────────────┘
 ```
-
-Tuning:
-
-- `diversity_factor = 0.0` means “very similar recommendations”
-- `diversity_factor = 1.0` means “more variety”
-- `year_weight` controls how much release-year proximity affects ranking
 
 ---
 
-### 5) Genre co-occurrence matrix (analysis)
-
-A co-occurrence matrix counts how often two genres appear together in the dataset:
-
-- `cooccurrence[i][j]` = number of movies containing both genres `i` and `j`
-
-The heatmap visualization often reveals clusters like:
-- Action <-> Thriller
-- Romance <-> Drama
-- Animation <-> Children
-
-This helps you understand the dataset and can guide future algorithm improvements.
-
----
-
-## Project structure
+## .:[ PROJECT STRUCTURE ]:.
 
 ```
 plot-gpt/
-├── app.py              # Flask app + recommendation engine + analytics routes
-├── movies.csv          # MovieLens movies dataset
-├── ratings.csv         # MovieLens ratings dataset (optional but recommended)
-├── requirements.txt    # Python dependencies
-└── templates/
-    └── index.html      # CRT-style frontend
+│
+├── src/                          # Source code
+│   ├── app.py                    # Flask routes & API endpoints
+│   ├── models.py                 # SQLAlchemy database models
+│   ├── database.py               # Database manager
+│   ├── migration.py              # CSV to database migration
+│   └── engine/                   # Recommendation engine
+│       ├── movie_db.py           # Movie database & indexing
+│       ├── recommender.py        # Recommendation algorithms
+│       └── visualizations.py     # Chart generation
+│
+├── data/                         # Data files
+│   ├── movies.csv                # MovieLens movies dataset
+│   ├── ratings.csv               # MovieLens ratings dataset
+│   └── movies.db                 # SQLite database (generated)
+│
+├── tests/                        # Test suite
+│   └── unit/                     # Unit & property-based tests
+│
+├── templates/                    # HTML templates
+│   └── index.html                # Single-page frontend
+│
+├── run.py                        # Application entry point
+├── requirements.txt              # Python dependencies
+└── README.md                     # This file
 ```
 
-Notes:
-- If you don’t want to commit large CSVs, add them to `.gitignore` and document how to download them.
-- Keeping `ratings.csv` available enables collaborative filtering upgrades.
+---
+
+## .:[ HOW IT WORKS ]:.
+
+### >> Content-Based Recommendation Algorithm
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│  STEP 1: Genre Vectorization                                    │
+│  ────────────────────────────                                   │
+│  Each movie → vector in genre-space                             │
+│  Binary encoding: [1, 0, 1, 0, ...]                             │
+│  Pre-normalized for fast cosine similarity                      │
+│                                                                 │
+│  STEP 2: User Profile Generation                                │
+│  ─────────────────────────────                                  │
+│  TF  (Term Frequency): Genre frequency in watched movies        │
+│  IDF (Inverse Document Frequency): Down-weight common genres    │
+│  Result: Personalized genre preference vector                   │
+│                                                                 │
+│  STEP 3: Cosine Similarity                                      │
+│  ───────────────────────                                        │
+│  Measure alignment: user profile ↔ candidate movies             │
+│  Range: 0.0 (unrelated) to 1.0 (perfect match)                  │
+│  Respects strength of genre preferences                         │
+│                                                                 │
+│  STEP 4: Final Scoring                                          │
+│  ────────────────────                                           │
+│  • Genre similarity (primary signal)                            │
+│  • Year proximity (secondary signal)                            │
+│  • Diversity factor (avoid echo chamber)                        │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### >> Why Cosine Over Jaccard?
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                                                          │
+│  JACCARD SIMILARITY                                      │
+│  └─> Binary set overlap                                  │
+│  └─> "Do they share genres?"                             │
+│  └─> Ignores preference strength                         │
+│                                                          │
+│  COSINE SIMILARITY                                       │
+│  └─> Vector alignment                                    │
+│  └─> "How strongly do preferences align?"                │
+│  └─> Respects distribution & strength                    │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## API endpoints
+## .:[ API ENDPOINTS ]:.
 
-### Core
+### >> Core Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/` | Serves the frontend |
-| GET | `/api/movies/search?q=...&limit=...` | Search movies by title |
-| GET | `/api/movies/<movie_id>` | Get a movie by ID |
-| GET | `/api/genres` | List all unique genres |
-| POST | `/api/recommendations` | Get recommendations |
-| GET | `/api/similar/<movie_id>` | Recommendations seeded by one movie |
-| GET | `/api/trending?genre=...&limit=...` | Simple trending list |
-| GET | `/api/stats` | Dataset statistics |
+```
+┌────────┬──────────────────────────────┬─────────────────────────────┐
+│ Method │ Endpoint                     │ Description                 │
+├────────┼──────────────────────────────┼─────────────────────────────┤
+│ GET    │ /                            │ Serve frontend              │
+│ GET    │ /api/movies/search?q=...     │ Search movies by title      │
+│ GET    │ /api/movies/<id>             │ Get movie by ID             │
+│ GET    │ /api/genres                  │ List all genres             │
+│ POST   │ /api/recommendations         │ Get recommendations         │
+│ GET    │ /api/similar/<id>            │ Similar movies              │
+│ GET    │ /api/trending                │ Trending movies             │
+│ GET    │ /api/stats                   │ Dataset statistics          │
+└────────┴──────────────────────────────┴─────────────────────────────┘
+```
 
-### Visualizations (PNG-as-base64 JSON payload)
+### >> Visualization Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/viz/genre-distribution` | Bar chart of genre counts |
-| GET | `/api/viz/movies-per-year` | Movies released per year |
-| GET | `/api/viz/genre-cooccurrence` | Genre co-occurrence heatmap |
-| POST | `/api/viz/genre-profile` | User genre profile chart |
+```
+┌────────┬──────────────────────────────┬─────────────────────────────┐
+│ Method │ Endpoint                     │ Description                 │
+├────────┼──────────────────────────────┼─────────────────────────────┤
+│ GET    │ /api/viz/genre-distribution  │ Genre count bar chart       │
+│ GET    │ /api/viz/movies-per-year     │ Release timeline            │
+│ GET    │ /api/viz/genre-cooccurrence  │ Genre relationship heatmap  │
+│ POST   │ /api/viz/genre-profile       │ User preference profile     │
+└────────┴──────────────────────────────┴─────────────────────────────┘
+```
+
+`Note: All visualization endpoints return base64-encoded PNG images in JSON`
 
 ---
 
-## Recommendation request format
-
-Example request body:
+## .:[ RECOMMENDATION REQUEST ]:.
 
 ```json
 {
@@ -189,87 +226,169 @@ Example request body:
 }
 ```
 
-- `watched_ids` (required): list of movieIds
-- `preferred_genres` (optional): if provided, overrides inferred profile
-- `n`: number of recommendations
-- `diversity`: 0 to 1
-- `year_weight`: 0 to 1
+```
+┌─────────────────────────────────────────────────────────────┐
+│  PARAMETERS                                                 │
+│  ──────────                                                 │
+│                                                             │
+│  watched_ids      [required]  List of movie IDs watched     │
+│  preferred_genres [optional]  Override inferred profile     │
+│  n                [optional]  Number of results (def: 15)   │
+│  diversity        [optional]  0.0-1.0 range (def: 0.3)      │
+│  year_weight      [optional]  Year influence (def: 0.2)     │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## Setup
+## .:[ TECH STACK ]:.
 
-Requirements: Python 3.9+ recommended
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  BACKEND                                                    │
+│  ───────                                                    │
+│  • Flask 3.1.3          Web framework                       │
+│  • pandas & numpy       Data processing                     │
+│  • SQLAlchemy           Database ORM                        │
+│  • matplotlib & seaborn Visualizations                      │
+│  • Hypothesis           Property-based testing              │
+│                                                             │
+│  FRONTEND                                                   │
+│  ────────                                                   │
+│  • Vanilla JavaScript   No framework                        │
+│  • HTML/CSS             Retro terminal styling              │
+│  • Google Fonts         VT323, Share Tech Mono              │
+│                                                             │
+│  DATA                                                       │
+│  ────                                                       │
+│  • MovieLens dataset    movies.csv, ratings.csv             │
+│  • SQLite database      Future hybrid features              │
+│  • numpy matrices       In-memory performance               │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## .:[ DEVELOPMENT ]:.
+
+### >> Running Tests
 
 ```bash
-git clone https://github.com/Sukanth19/plot-gpt.git
-cd plot-gpt
+# Install dev dependencies
+pip install -r requirements-dev.txt
 
-python -m venv venv
-source venv/bin/activate
+# Run all tests
+python -m pytest tests/ -v
 
-pip install -r requirements.txt
-python app.py
+# Run specific test suite
+python -m pytest tests/unit/test_migration_data_preservation.py -v
+
+# Run with coverage
+python -m pytest tests/ --cov=src --cov-report=html
 ```
 
-Open:
-
-```
-http://localhost:5000
-```
-
----
-
-## Dependencies
-
-| Package | Purpose |
-|---|---|
-| Flask | Web server + routing |
-| pandas | CSV loading + cleaning |
-| numpy | Vector math + fast matrix operations |
-| matplotlib | Chart rendering (server-side) |
-| seaborn | Styled plots + heatmaps |
-
-Optional / upcoming (for collaborative filtering):
-- scikit-learn / scipy (SVD + sparse matrices)
-
----
-
-## Dataset
-
-This project uses the MovieLens dataset format:
-
-- `movies.csv`: `movieId,title,genres`
-- `ratings.csv`: `userId,movieId,rating,timestamp`
-
-Movies with `(no genres listed)` are excluded when building genre-based features.
-
----
-
-## Roadmap (planned upgrades)
-
-Text-only “emojis” included for style:
-
-- [ ] Hybrid recommendations: content + collaborative filtering (SVD)
-- [ ] Evaluation metrics: Precision@K, Recall@K, NDCG, coverage, diversity
-- [ ] Explainability: show "why recommended" (genre overlap + CF similarity)
-- [ ] Cache + performance: avoid repeated computations during requests
-- [ ] UI: charts panel + model diagnostics inside the app
-
----
-
-## Notes on reproducibility
-
-If you install new packages during development:
+### >> Database Migration
 
 ```bash
+# Migrate CSV data to SQLite database
+python -c "from src.database import DatabaseManager; \
+           db = DatabaseManager('sqlite:///data/movies.db'); \
+           db.create_schema(); \
+           db.migrate_from_csv('data/movies.csv', 'data/ratings.csv')"
+```
+
+### >> Adding Dependencies
+
+```bash
+pip install <package>
 pip freeze > requirements.txt
 ```
 
-Then commit the updated `requirements.txt` so the environment can be reproduced on another machine.
+---
+
+## .:[ ROADMAP ]:.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  [x] Content-based recommendations with cosine similarity   │
+│  [x] TF-IDF user profiling                                  │
+│  [x] Interactive visualizations                             │
+│  [x] Database infrastructure (SQLAlchemy + SQLite)          │
+│                                                             │
+│  [ ] Collaborative filtering (user-based CF)                │
+│  [ ] Hybrid recommendation algorithm                        │
+│  [ ] Personalized learning from interactions                │
+│  [ ] Star rating system                                     │
+│  [ ] Watchlist feature                                      │
+│  [ ] Recommendation explanations                            │
+│  [ ] Interactive Plotly charts                              │
+│  [ ] Lazy loading for performance                           │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## License
+## .:[ DATASET ]:.
 
-Add a license if you plan to share/extend this project publicly.
+This project uses the **MovieLens dataset** available on Kaggle:
+
+```
+movies.csv   → movieId, title, genres (pipe-separated)
+ratings.csv  → userId, movieId, rating, timestamp
+```
+
+**Download:** https://www.kaggle.com/datasets/parasharmanas/movie-recommendation-system
+
+After downloading, extract `movies.csv` and `ratings.csv` to the `data/` directory.
+
+`Note: Movies with "(no genres listed)" are excluded from recommendations`
+
+---
+
+## .:[ LICENSE ]:.
+
+```
+MIT License - See LICENSE file for details
+```
+
+---
+
+## .:[ CONTRIBUTING ]:.
+
+Contributions welcome! Please follow these steps:
+
+```
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new functionality
+4. Submit a pull request
+```
+
+---
+
+## .:[ ACKNOWLEDGMENTS ]:.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  • MovieLens dataset by GroupLens Research                  │
+│  • Inspired by classic terminal UIs                         │
+│  • Retro computing aesthetics                               │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+<div align="center">
+
+**Made with <3 for movie lovers and retro computing enthusiasts**
+
+`[ Flask ]` · `[ Python ]` · `[ Machine Learning ]` · `[ Retro UI ]`
+
+</div>
